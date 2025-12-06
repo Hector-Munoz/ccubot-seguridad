@@ -7,8 +7,8 @@ import pypdf
 import docx
 from google import genai
 from google.genai.types import GenerateContentConfig
-import pypdf
-import docx
+from oauth2client.service_account import ServiceAccountCredentials
+
 
 
 # --- FUNCIÓN PARA GUARDAR EN SHEETS ---
