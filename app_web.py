@@ -2,11 +2,37 @@ import os
 import datetime  # <--- NUEVO: Para registrar la hora de los chats
 import streamlit as st
 import base64  # <--- NUEVO: Necesario para crear los links
+import gspread
+import pypdf
+import docx
 from google import genai
 from google.genai.types import GenerateContentConfig
 import pypdf
 import docx
 
+
+# --- FUNCIÓN PARA GUARDAR EN SHEETS ---
+def guardar_en_sheets(usuario, respuesta_bot):
+    try:
+        # Definir el alcance (permisos)
+        scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
+        
+        # Cargar credenciales desde los Secretos de Streamlit
+        creds_dict = st.secrets["gcp_service_account"]
+        creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
+        
+        # Conectar
+        client = gspread.authorize(creds)
+        
+        # Abrir la hoja por su nombre (Asegúrate que se llame IGUAL en Google Sheets)
+        sheet = client.open("Historial_CcuBot").sheet1 
+        
+        # Escribir la fila
+        timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        sheet.append_row([timestamp, usuario, respuesta_bot])
+        
+    except Exception as e:
+        print(f"Error guardando en Sheets: {e}")
 
 def crear_link_descarga(ruta_archivo, nombre_archivo):
     """Lee un archivo y genera un link HTML con los datos incrustados."""
@@ -194,11 +220,12 @@ if prompt := st.chat_input("¿En qué puedo ayudarte hoy?"):
             
             history_str = "\n".join([f"{m['role']}: {m['content']}" for m in st.session_state.messages])
             
+            #Obtencion de respuesta con Gemini
             response = get_gemini_response(history_str, contexto_con_nombres, API_KEY)
             st.markdown(response)
             
             # --- DETECTOR DE INTENCIÓN DE DESCARGA (VERSIÓN LINKS) ---
-            palabras_clave = ["descargar", "bajar", "link", "archivo", "documento"]
+            palabras_clave = ["descargar", "bajar", "link", "archivo", "documento","manual"]
             
             # --- DETECTOR DE DESCARGA INTELIGENTE ---
             palabras_clave_descarga = ["descargar", "bajar", "link", "archivo", "documento", "manual", "guia"]
@@ -263,6 +290,9 @@ if prompt := st.chat_input("¿En qué puedo ayudarte hoy?"):
             # -----------------------------------------------------------
 
     st.session_state.messages.append({"role": "assistant", "content": response})
+    
+    # GUARDAR EN GOOGLE SHEETS (Automático)
+    guardar_en_sheets(prompt, response)
 
     # Guardar en historial
     try:
