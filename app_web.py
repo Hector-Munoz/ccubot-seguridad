@@ -130,6 +130,7 @@ def get_gemini_response(history, context, api_key):
         "Si no encuentras la respuesta en el contexto, dilo claramente."
         "Pregunta si el problema es de CCUSAFE o SAFECARD"
         "Cuando tengan problemas de instalacion muestra el archivo Primer Manual"
+        "Desppliega solo el manual especifico para la solicitud especifica"
     )
     
     try:
